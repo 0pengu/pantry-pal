@@ -1,4 +1,5 @@
 import { deletePantryItemSchema } from "@/app/(main)/dashboard/_components/delete-pantry-item/types";
+import { formatFutureTime } from "@/app/(main)/dashboard/_utils/formatTime";
 import { useRefreshState } from "@/app/(main)/dashboard/store";
 import { pantryItem } from "@/app/(main)/dashboard/types";
 import db from "@/utils/db";
@@ -15,10 +16,12 @@ import {
   TextField,
 } from "@mui/material";
 import { User } from "firebase/auth";
+import { motion } from "framer-motion";
 import moment from "moment";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Error, Check } from "@mui/icons-material";
 
 export default function DeletePantryItem({
   user,
@@ -80,43 +83,36 @@ export default function DeletePantryItem({
           <DialogContentText>
             Are you sure you want to delete this item?
           </DialogContentText>
-          <TextField
-            value={pantryItem.name}
-            label="What is the name of the item?"
-            autoFocus
-            margin="dense"
-            fullWidth
-            variant="standard"
-            disabled
-          />
-          <TextField
-            value={pantryItem.quantity}
-            type="number"
-            label="How many do you have?"
-            margin="dense"
-            fullWidth
-            variant="standard"
-            disabled
-          />
-          <TextField
-            value={moment(pantryItem.expirationDate.toDate()).format(
-              "YYYY-MM-DDTHH:mm"
-            )}
-            label="When does it expire?"
-            margin="dense"
-            fullWidth
-            variant="standard"
-            type="datetime-local"
-            disabled
-          />
-          <TextField
-            value={pantryItem.notes}
-            label="Any notes you want to add?"
-            margin="dense"
-            fullWidth
-            variant="standard"
-            disabled
-          />
+          <motion.div
+            key={pantryItem.id}
+            className="bg-gray-100 shadow-lg rounded-md p-4 flex flex-col min-h-40"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex justify-between">
+              <h2>
+                <div className="inline mr-1 ">
+                  {pantryItem.expirationDate.toDate() < new Date() ? (
+                    <Error />
+                  ) : (
+                    <Check />
+                  )}
+                </div>
+                {pantryItem.name}{" "}
+                <div className="inline bg-black text-white rounded-full px-2 text-center">
+                  {pantryItem.quantity}
+                </div>
+              </h2>
+            </div>
+            <div className="bg-black text-white rounded-full my-4 p-2 text-center">
+              {formatFutureTime(
+                pantryItem.expirationDate.toDate().toISOString()
+              )}
+            </div>
+            <p className="pt-2">{pantryItem.notes}</p>
+          </motion.div>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="github">
