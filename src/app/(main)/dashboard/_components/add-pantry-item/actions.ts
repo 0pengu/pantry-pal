@@ -14,16 +14,12 @@ import { put } from "@vercel/blob";
 import { pantryItem } from "@/app/(main)/dashboard/types";
 import { CoreMessage, generateObject, streamObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import fs from "fs";
-import path from "path";
 
 // helper function to convert a file to base64
 const fileToBase64 = async (file: File): Promise<string> => {
-  const filePath = path.resolve(file.name);
-  fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
-  const fileBuffer = fs.readFileSync(filePath);
-  fs.unlinkSync(filePath); // Clean up the temporary file
-  return fileBuffer.toString("base64");
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  return buffer.toString("base64");
 };
 
 export async function addPantryItem(data: z.infer<typeof addPantryItemSchema>) {
