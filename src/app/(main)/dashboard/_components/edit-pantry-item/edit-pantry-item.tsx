@@ -127,7 +127,7 @@ export default function EditPantryItem({
 
   return (
     <React.Fragment>
-      <Button variant="contained" onClick={handleClickOpen}>
+      <Button variant="contained" onClick={handleClickOpen} disabled={disabled}>
         <Edit />
       </Button>
       <Dialog
