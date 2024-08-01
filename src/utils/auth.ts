@@ -41,5 +41,11 @@ interface DatabaseUserAttributes {
 
 export const github = new GitHub(
   process.env.GITHUB_CLIENT_ID!,
-  process.env.GITHUB_CLIENT_SECRET!
+  process.env.GITHUB_CLIENT_SECRET!,
+  {
+    redirectURI:
+      process.env.NODE_ENV === "production"
+        ? process.env.GITHUB_CALLBACK_PROD
+        : process.env.GITHUB_CALLBACK_DEV,
+  }
 );
