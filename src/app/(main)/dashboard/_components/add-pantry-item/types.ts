@@ -16,4 +16,5 @@ export const addPantryItemSchema = z.object({
       message: "Expiration date must be in the future",
     }),
   notes: z.string().max(30000).optional(),
+  imageUrl: z.string().optional(),
 });

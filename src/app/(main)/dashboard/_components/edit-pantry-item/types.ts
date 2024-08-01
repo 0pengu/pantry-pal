@@ -12,4 +12,5 @@ export const editPantryItemSchema = z.object({
     { message: "Invalid date" }
   ),
   notes: z.string().max(30000).optional(),
+  imageUrl: z.string().optional(),
 });

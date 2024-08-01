@@ -1,17 +1,16 @@
-import { useFilteredPantryItemsState } from "@/app/(main)/dashboard/store";
 import { pantryItem } from "@/app/(main)/dashboard/types";
 import { Input } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 interface SearchProps {
   pantryItems: pantryItem[];
+  setFilteredPantryItems: Dispatch<SetStateAction<pantryItem[]>>;
 }
 
-export default function Search({ pantryItems }: SearchProps) {
-  const setFilteredPantryItems = useFilteredPantryItemsState(
-    (state) => state.setPantryItems
-  );
-
+export default function Search({
+  pantryItems,
+  setFilteredPantryItems,
+}: SearchProps) {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const ref = useRef<HTMLInputElement>(null);
 

@@ -4,6 +4,7 @@ export type pantryItem = {
   id: string;
   name: string;
   quantity: number;
-  expirationDate: Timestamp;
+  expirationDate: Date;
   notes?: string;
+  imageUrl: string;
 };

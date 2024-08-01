@@ -1,9 +1,6 @@
 import { deletePantryItemSchema } from "@/app/(main)/dashboard/_components/delete-pantry-item/types";
 import { formatFutureTime } from "@/app/(main)/dashboard/_utils/formatTime";
-import { useRefreshState } from "@/app/(main)/dashboard/store";
 import { pantryItem } from "@/app/(main)/dashboard/types";
-import db from "@/utils/db";
-import { deleteDoc, doc } from "@firebase/firestore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Delete } from "@mui/icons-material";
 import {
@@ -15,13 +12,16 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
-import { User } from "firebase/auth";
+import { User } from "lucia";
 import { motion } from "framer-motion";
 import moment from "moment";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Error, Check } from "@mui/icons-material";
+import { deletePantryItem } from "@/app/(main)/dashboard/_components/delete-pantry-item/actions";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function DeletePantryItem({
   user,
@@ -30,10 +30,7 @@ export default function DeletePantryItem({
   user: User;
   pantryItem: pantryItem;
 }) {
-  const [refreshes, setRefreshes] = useRefreshState((state) => [
-    state.refreshes,
-    state.setRefreshes,
-  ]);
+  const router = useRouter();
 
   const [open, setOpen] = useState(false);
 
@@ -53,16 +50,21 @@ export default function DeletePantryItem({
   });
 
   const onSubmit = async (data: z.infer<typeof deletePantryItemSchema>) => {
-    try {
-      await deleteDoc(doc(db, `users/${user.uid}/pantry/${data.id}`));
-      form.reset({
-        id: "",
-      });
-      handleClose();
-      setRefreshes(refreshes + 1);
-    } catch (error) {
-      console.error("Error adding document: ", error);
+    const response = deletePantryItem(data);
+    toast.promise(response, {
+      loading: "Deleting item from pantry...",
+      success: "Item deleted from pantry",
+      error: "Error deleting item from pantry",
+    });
+    const { success } = await response;
+    if (!success) {
+      return;
     }
+    form.reset({
+      id: "",
+    });
+    handleClose();
+    router.refresh();
   };
 
   return (
@@ -94,7 +96,7 @@ export default function DeletePantryItem({
             <div className="flex justify-between">
               <h2>
                 <div className="inline mr-1 ">
-                  {pantryItem.expirationDate.toDate() < new Date() ? (
+                  {pantryItem.expirationDate < new Date() ? (
                     <Error />
                   ) : (
                     <Check />
@@ -107,9 +109,7 @@ export default function DeletePantryItem({
               </h2>
             </div>
             <div className="bg-black text-white rounded-full my-4 p-2 text-center">
-              {formatFutureTime(
-                pantryItem.expirationDate.toDate().toISOString()
-              )}
+              {formatFutureTime(pantryItem.expirationDate.toISOString())}
             </div>
             <p className="pt-2">{pantryItem.notes}</p>
           </motion.div>

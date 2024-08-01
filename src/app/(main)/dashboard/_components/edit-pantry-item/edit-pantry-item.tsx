@@ -1,10 +1,10 @@
+"use client";
+
+import { editPantryItem } from "@/app/(main)/dashboard/_components/edit-pantry-item/actions";
 import { editPantryItemSchema } from "@/app/(main)/dashboard/_components/edit-pantry-item/types";
-import { useRefreshState } from "@/app/(main)/dashboard/store";
 import { pantryItem } from "@/app/(main)/dashboard/types";
-import db from "@/utils/db";
-import { doc, Timestamp, updateDoc } from "@firebase/firestore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Edit } from "@mui/icons-material";
+import { Check, Edit, Error } from "@mui/icons-material";
 import {
   Button,
   Dialog,
@@ -13,12 +13,18 @@ import {
   DialogContentText,
   DialogTitle,
   TextField,
+  Typography,
 } from "@mui/material";
-import { User } from "firebase/auth";
+import { User } from "lucia";
 import moment from "moment-timezone";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { z } from "zod";
+import { useCustomDropzone } from "@/app/(main)/dashboard/_components/custom-dropzone";
+import { uploadImage } from "@/app/(main)/dashboard/_components/add-pantry-item/actions";
 
 export default function EditPantryItem({
   user,
@@ -27,12 +33,11 @@ export default function EditPantryItem({
   user: User;
   pantryItem: pantryItem;
 }) {
-  const [refreshes, setRefreshes] = useRefreshState((state) => [
-    state.refreshes,
-    state.setRefreshes,
-  ]);
-
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | undefined>(
+    pantryItem.imageUrl
+  );
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -48,44 +53,58 @@ export default function EditPantryItem({
       id: pantryItem.id,
       name: pantryItem.name,
       quantity: pantryItem.quantity,
-      expirationDate: moment(pantryItem.expirationDate.toDate()).format(
+      expirationDate: moment(pantryItem.expirationDate).format(
         "YYYY-MM-DDTHH:mm"
       ),
       notes: pantryItem.notes,
+      imageUrl: pantryItem.imageUrl,
     },
   });
 
   const onSubmit = async (data: z.infer<typeof editPantryItemSchema>) => {
-    try {
-      // Convert the expirationDate to EST
-      const expirationDate = moment
-        .tz(data.expirationDate, "America/New_York")
-        .toDate();
-
-      const editedData = {
-        ...data,
-        expirationDate: Timestamp.fromDate(expirationDate),
-      };
-      await updateDoc(
-        doc(db, `users/${user.uid}/pantry/${data.id}`),
-        editedData
-      );
-
-      form.reset({
-        id: editedData.id,
-        name: editedData.name,
-        quantity: editedData.quantity,
-        expirationDate: moment(editedData.expirationDate.toDate()).format(
-          "YYYY-MM-DDTHH:mm"
-        ),
-        notes: editedData.notes,
-      });
-      handleClose();
-      setRefreshes(refreshes + 1);
-    } catch (error) {
-      console.error("Error updating document: ", error);
+    const response = editPantryItem({ ...data, imageUrl });
+    toast.promise(response, {
+      loading: "Editing item in pantry...",
+      success: "Item edited in pantry",
+      error: "Error editing item in pantry",
+    });
+    const { success } = await response;
+    if (!success) {
+      return;
     }
+    form.reset({
+      id: data.id,
+      name: data.name,
+      quantity: data.quantity,
+      expirationDate: moment(data.expirationDate).format("YYYY-MM-DDTHH:mm"),
+      notes: data.notes,
+      imageUrl: data.imageUrl,
+    });
+    router.refresh();
+    handleClose();
   };
+
+  const onDrop = async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = uploadImage(formData);
+    toast.promise(response, {
+      loading: "Uploading image...",
+      success: "Image uploaded",
+      error: "Error uploading image",
+    });
+    const blobResult = await response;
+    const newImageUrl = blobResult.url;
+    setImageUrl(newImageUrl);
+  };
+
+  const {
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    open: openFile,
+  } = useCustomDropzone(onDrop);
 
   return (
     <React.Fragment>
@@ -163,6 +182,46 @@ export default function EditPantryItem({
           />
           {form.formState.errors.notes && (
             <p>{form.formState.errors.notes.message}</p>
+          )}
+          {imageUrl ? (
+            <div>
+              <Image
+                src={imageUrl}
+                alt="Uploaded"
+                className="w-full mt-4 mb-4"
+                width={200}
+                height={200}
+              />
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={openFile}
+                className="mt-2"
+                fullWidth
+              >
+                Replace Image
+              </Button>
+            </div>
+          ) : (
+            <div
+              {...getRootProps({
+                className: "dropzone",
+              })}
+              className="grid w-full items-center gap-1.5 border border-dashed p-4"
+            >
+              <input {...getInputProps()} />
+              {isDragActive ? (
+                <p>Drop here...</p>
+              ) : (
+                <p className="text-xs">
+                  Drag and drop some files here, or click to select files
+                </p>
+              )}
+              <Button type="button" onClick={openFile}>
+                Browse Files
+              </Button>
+              <p className="text-xs">Images only. Max 4 MB. One file only.</p>
+            </div>
           )}
         </DialogContent>
         <DialogActions>

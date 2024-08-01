@@ -14,14 +14,13 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { logout } from "@/utils/auth";
 import { useState } from "react";
 import { AccountCircle } from "@mui/icons-material";
+import { logout } from "@/app/(auth)/logout/actions";
+import { User } from "lucia";
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: User | null }) {
   const path = usePathname();
-  const { user } = useAuth();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -77,7 +76,7 @@ export default function Navbar() {
                 color="inherit"
               >
                 <Image
-                  src={user.photoURL || ""}
+                  src={user.avatar_url || ""}
                   alt="Profile Picture"
                   width={40}
                   height={40}
@@ -99,7 +98,9 @@ export default function Navbar() {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
               >
-                <MenuItem disabled>{user.email}</MenuItem>
+                <MenuItem disabled>
+                  {user.username} ({user.email})
+                </MenuItem>
                 <MenuItem
                   onClick={() => {
                     handleClose();

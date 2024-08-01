@@ -5,57 +5,25 @@ import DeletePantryItem from "@/app/(main)/dashboard/_components/delete-pantry-i
 import EditPantryItem from "@/app/(main)/dashboard/_components/edit-pantry-item/edit-pantry-item";
 import Search from "@/app/(main)/dashboard/_components/search";
 import { formatFutureTime } from "@/app/(main)/dashboard/_utils/formatTime";
-import {
-  useRefreshState,
-  useFilteredPantryItemsState,
-} from "@/app/(main)/dashboard/store";
 import { pantryItem } from "@/app/(main)/dashboard/types";
-import db from "@/utils/db";
-import { getDocs, collection } from "@firebase/firestore";
-import { Check, Error } from "@mui/icons-material";
-import { Typography, Backdrop, CircularProgress } from "@mui/material";
-import { User } from "firebase/auth";
+import { Error } from "@mui/icons-material";
+import { Backdrop, CircularProgress, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { User } from "lucia";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { create } from "zustand";
 
-export default function PantryItems({ user }: { user: User }) {
-  const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<pantryItem[]>([]);
+export default function PantryItems({
+  user,
+  pantryItems,
+}: {
+  user: User;
+  pantryItems: pantryItem[];
+}) {
+  const [loading, setLoading] = useState(false);
 
-  const [refreshes, setRefreshes] = useRefreshState((state) => [
-    state.refreshes,
-    state.setRefreshes,
-  ]);
-
-  useEffect(() => {
-    const fetchItems = async () => {
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      const querySnapshot = await getDocs(
-        collection(db, `users/${user.uid}/pantry`)
-      );
-      setItems(querySnapshot.docs.map((doc) => doc.data() as pantryItem));
-      setLoading(false);
-    };
-
-    fetchItems();
-  }, [refreshes, user.uid]);
-
-  const filteredPantryItems = useFilteredPantryItemsState(
-    (state) => state.pantryItems
-  );
-
-  const filteredPantryItemsByTime = filteredPantryItems.sort(
-    (a, b) => a.expirationDate.toMillis() - b.expirationDate.toMillis()
-  );
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshes(refreshes + 1);
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [refreshes, setRefreshes]);
+  const [filteredPantryItems, setFilteredPantryItems] = useState(pantryItems);
 
   return (
     <main className="h-[calc(100vh-200px)]">
@@ -64,7 +32,10 @@ export default function PantryItems({ user }: { user: User }) {
       </Typography>
       <div className="p-2 space-x-2">
         <AddPantryItem user={user} />
-        <Search pantryItems={items} />
+        <Search
+          pantryItems={pantryItems}
+          setFilteredPantryItems={setFilteredPantryItems}
+        />
       </div>
       <Backdrop
         sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
@@ -72,7 +43,7 @@ export default function PantryItems({ user }: { user: User }) {
       >
         <CircularProgress color="inherit" />
       </Backdrop>
-      {filteredPantryItemsByTime.length === 0 && (
+      {pantryItems.length === 0 && (
         <Typography variant="h4" className="p-2">
           No items in your pantry
         </Typography>
@@ -84,10 +55,10 @@ export default function PantryItems({ user }: { user: User }) {
         exit={{ opacity: 0 }}
       >
         <AnimatePresence mode="popLayout">
-          {filteredPantryItemsByTime.map((item) => (
+          {filteredPantryItems.map((item) => (
             <motion.div
               key={item.id}
-              className="bg-gray-100 shadow-lg rounded-md p-4 flex flex-col min-h-40"
+              className="bg-gray-100 shadow-lg rounded-md p-4 flex flex-col"
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -50 }}
@@ -95,11 +66,11 @@ export default function PantryItems({ user }: { user: User }) {
             >
               <div className="flex justify-between">
                 <h2>
-                  <div className="inline mr-1 ">
-                    {item.expirationDate.toDate() < new Date() ? (
-                      <Error />
-                    ) : null}
-                  </div>
+                  {item.expirationDate < new Date() && (
+                    <div className="inline bg-black text-white rounded-full px-2 text-center">
+                      !
+                    </div>
+                  )}{" "}
                   {item.name}{" "}
                   <div className="inline bg-black text-white rounded-full px-2 text-center">
                     {item.quantity}
@@ -111,9 +82,22 @@ export default function PantryItems({ user }: { user: User }) {
                 </div>
               </div>
               <div className="bg-black text-white rounded-full my-4 p-2 text-center">
-                {formatFutureTime(item.expirationDate.toDate().toISOString())}
+                {formatFutureTime(item.expirationDate.toISOString())}
               </div>
               <p className="pt-2">{item.notes}</p>
+              {item.imageUrl && (
+                <>
+                  <div className="w-full h-[1px] bg-gray-300 my-2" />
+                  <div className="flex justify-center">
+                    <Image
+                      src={item.imageUrl}
+                      alt="Uploaded"
+                      width={200}
+                      height={200}
+                    />
+                  </div>
+                </>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>

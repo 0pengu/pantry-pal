@@ -1,20 +1,45 @@
-import { auth, provider } from "@/utils/firebase";
-import { signInWithPopup, signOut } from "firebase/auth";
-import { redirect } from "next/navigation";
+import { PrismaAdapter } from "@lucia-auth/adapter-prisma";
+import { PrismaClient } from "@prisma/client";
+import { Lucia } from "lucia/dist/core";
+import { GitHub } from "arctic";
 
-export const signInWithGitHub = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    if (user) {
-      redirect("/dashboard");
-    }
-  } catch (error) {}
-};
+export const prisma = new PrismaClient();
 
-export const logout = async () => {
-  try {
-    await signOut(auth);
-    redirect("/");
-  } catch (error) {}
-};
+const adapter = new PrismaAdapter(prisma.session, prisma.user);
+
+export const lucia = new Lucia(adapter, {
+  sessionCookie: {
+    expires: false,
+    attributes: {
+      secure: process.env.NODE_ENV === "production",
+    },
+  },
+  getUserAttributes: (attributes) => {
+    return {
+      // attributes has the type of DatabaseUserAttributes
+      githubId: attributes.github_id,
+      username: attributes.username,
+      email: attributes.email,
+      avatar_url: attributes.avatar_url,
+    };
+  },
+});
+
+declare module "lucia" {
+  interface Register {
+    Lucia: typeof lucia;
+    DatabaseUserAttributes: DatabaseUserAttributes;
+  }
+}
+
+interface DatabaseUserAttributes {
+  github_id: number;
+  username: string;
+  email: string;
+  avatar_url: string;
+}
+
+export const github = new GitHub(
+  process.env.GITHUB_CLIENT_ID!,
+  process.env.GITHUB_CLIENT_SECRET!
+);
