@@ -178,13 +178,33 @@ export default function AddPantryItem({ user }: { user: User }) {
             <p>{form.formState.errors.notes.message}</p>
           )}
           {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt="Uploaded"
-              className="w-full mt-4"
-              width={200}
-              height={200}
-            />
+            <div className="space-y-2">
+              <Image
+                src={imageUrl}
+                alt="Uploaded"
+                className="w-full mt-4"
+                width={200}
+                height={200}
+              />
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={openFile}
+                className="mt-2"
+                fullWidth
+              >
+                Replace Image
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => setImageUrl(undefined)}
+                className="mt-2"
+                fullWidth
+              >
+                Remove Image
+              </Button>
+            </div>
           ) : (
             <div
               {...getRootProps({

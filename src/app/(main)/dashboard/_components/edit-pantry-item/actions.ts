@@ -32,7 +32,7 @@ export async function editPantryItem(
         quantity: data.quantity,
         expirationDate: expirationDate,
         notes: data.notes,
-        imageUrl: data.imageUrl,
+        imageUrl: data.imageUrl || "",
       } as pantryItem);
 
     return {

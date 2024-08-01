@@ -184,11 +184,11 @@ export default function EditPantryItem({
             <p>{form.formState.errors.notes.message}</p>
           )}
           {imageUrl ? (
-            <div>
+            <div className="space-y-2">
               <Image
                 src={imageUrl}
                 alt="Uploaded"
-                className="w-full mt-4 mb-4"
+                className="w-full mt-4"
                 width={200}
                 height={200}
               />
@@ -200,6 +200,15 @@ export default function EditPantryItem({
                 fullWidth
               >
                 Replace Image
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => setImageUrl(undefined)}
+                className="mt-2"
+                fullWidth
+              >
+                Remove Image
               </Button>
             </div>
           ) : (
