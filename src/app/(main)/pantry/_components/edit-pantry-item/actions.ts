@@ -1,8 +1,8 @@
 "use server";
 
 import { validateRequest } from "@/app/(auth)/validate/actions";
-import { editPantryItemSchema } from "@/app/(main)/dashboard/_components/edit-pantry-item/types";
-import { pantryItem } from "@/app/(main)/dashboard/types";
+import { editPantryItemSchema } from "@/app/(main)/pantry/_components/edit-pantry-item/types";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { db } from "@/utils/firebase";
 import { Timestamp } from "@firebase/firestore";
 import moment from "moment-timezone";

@@ -1,8 +1,8 @@
 "use client";
 
-import { editPantryItem } from "@/app/(main)/dashboard/_components/edit-pantry-item/actions";
-import { editPantryItemSchema } from "@/app/(main)/dashboard/_components/edit-pantry-item/types";
-import { pantryItem } from "@/app/(main)/dashboard/types";
+import { editPantryItem } from "@/app/(main)/pantry/_components/edit-pantry-item/actions";
+import { editPantryItemSchema } from "@/app/(main)/pantry/_components/edit-pantry-item/types";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Edit, Error } from "@mui/icons-material";
 import {
@@ -23,8 +23,8 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
-import { useCustomDropzone } from "@/app/(main)/dashboard/_components/custom-dropzone";
-import { uploadImage } from "@/app/(main)/dashboard/_components/add-pantry-item/actions";
+import { useCustomDropzone } from "@/app/(main)/pantry/_components/custom-dropzone";
+import { uploadImage } from "@/app/(main)/pantry/_components/add-pantry-item/actions";
 import { useGlobalDisableStore } from "@/app/(main)/store";
 
 export default function EditPantryItem({

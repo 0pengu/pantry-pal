@@ -1,8 +1,8 @@
 "use client";
 
-import { deletePantryItemSchema } from "@/app/(main)/dashboard/_components/delete-pantry-item/types";
-import { formatFutureTime } from "@/app/(main)/dashboard/_utils/formatTime";
-import { pantryItem } from "@/app/(main)/dashboard/types";
+import { deletePantryItemSchema } from "@/app/(main)/pantry/_components/delete-pantry-item/types";
+import { formatFutureTime } from "@/app/(main)/pantry/_utils/formatTime";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Delete } from "@mui/icons-material";
 import {
@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { deletePantryItem } from "@/app/(main)/dashboard/_components/delete-pantry-item/actions";
+import { deletePantryItem } from "@/app/(main)/pantry/_components/delete-pantry-item/actions";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useGlobalDisableStore } from "@/app/(main)/store";

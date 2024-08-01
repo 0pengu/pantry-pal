@@ -4,9 +4,10 @@ import {
   addPantryItem,
   uploadImage,
   uploadImageWithAi,
-} from "@/app/(main)/dashboard/_components/add-pantry-item/actions";
-import { addPantryItemSchema } from "@/app/(main)/dashboard/_components/add-pantry-item/types";
-import { useCustomDropzone } from "@/app/(main)/dashboard/_components/custom-dropzone";
+} from "@/app/(main)/pantry/_components/add-pantry-item/actions";
+import { addPantryItemSchema } from "@/app/(main)/pantry/_components/add-pantry-item/types";
+import { useCustomDropzone } from "@/app/(main)/pantry/_components/custom-dropzone";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { useGlobalDisableStore } from "@/app/(main)/store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Add, Check, Error, X } from "@mui/icons-material";
@@ -22,14 +23,28 @@ import {
   ToggleButton,
   Typography,
 } from "@mui/material";
+import { readStreamableValue } from "ai/rsc";
 import { User } from "lucia";
 import moment from "moment-timezone";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast, { CheckmarkIcon, ErrorIcon } from "react-hot-toast";
 import { z } from "zod";
+
+const isValidUrl = (urlString: string) => {
+  var urlPattern = new RegExp(
+    "^(https?:\\/\\/)?" + // validate protocol
+      "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // validate domain name
+      "((\\d{1,3}\\.){3}\\d{1,3}))" + // validate OR ip (v4) address
+      "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // validate port and path
+      "(\\?[;&a-z\\d%_.~+=-]*)?" + // validate query string
+      "(\\#[-a-z\\d_]*)?$",
+    "i"
+  ); // validate fragment locator
+  return !!urlPattern.test(urlString);
+};
 
 export default function AddPantryItem({ user }: { user: User }) {
   const router = useRouter();
@@ -43,6 +58,8 @@ export default function AddPantryItem({ user }: { user: User }) {
     state.disabled,
     state.setDisabled,
   ]);
+
+  const [streamedResponse, setStreamedResponse] = useState<string>("");
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -72,6 +89,24 @@ export default function AddPantryItem({ user }: { user: User }) {
       imageUrl: "",
     },
   });
+
+  useEffect(() => {
+    if (streamedResponse) {
+      try {
+        const parsedResponse = JSON.parse(streamedResponse) as pantryItem;
+        console.log(parsedResponse);
+        form.setValue("name", parsedResponse.name);
+        form.setValue("quantity", parsedResponse.quantity);
+        form.setValue(
+          "expirationDate",
+          moment(parsedResponse.expirationDate).format("YYYY-MM-DDTHH:mm")
+        );
+        form.setValue("notes", parsedResponse.notes);
+      } catch (error) {
+        console.error("Failed to validate streamed response", error);
+      }
+    }
+  }, [form, streamedResponse]);
 
   const onSubmit = async (data: z.infer<typeof addPantryItemSchema>) => {
     setDisabled(true);
@@ -112,22 +147,22 @@ export default function AddPantryItem({ user }: { user: User }) {
       if (useAi) {
         const response = uploadImageWithAi(formData);
         toast.promise(response, {
-          loading: "Uploading image...",
-          success: "Image uploaded",
-          error: "Error uploading image",
+          loading: "Uploading image and processing with AI...",
+          success:
+            "Image uploaded, please wait for AI to process and stream the data",
+          error: "Error uploading image and/or processing with AI",
         });
 
-        const result = await response;
-        setDisabled(false);
+        const { object, imageUrl } = await response;
 
-        form.setValue("name", result.name);
-        form.setValue("quantity", result.quantity);
-        form.setValue(
-          "expirationDate",
-          moment(result.expirationDate).format("YYYY-MM-DDTHH:mm")
-        );
-        form.setValue("notes", result.notes);
-        setImageUrl(result.imageUrl);
+        for await (const partialObject of readStreamableValue(object)) {
+          if (partialObject) {
+            setStreamedResponse(JSON.stringify(partialObject, null, 2));
+          }
+        }
+
+        setDisabled(false);
+        setImageUrl(imageUrl);
       } else {
         const response = uploadImage(formData);
         toast.promise(response, {

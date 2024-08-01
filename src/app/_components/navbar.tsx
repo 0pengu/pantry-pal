@@ -8,31 +8,44 @@ import {
   Menu,
   MenuItem,
   Toolbar,
+  Tooltip,
   Typography,
+  Avatar,
+  Container,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import AdbIcon from "@mui/icons-material/Adb";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 import { useState } from "react";
-import { AccountCircle } from "@mui/icons-material";
 import { logout } from "@/app/(auth)/logout/actions";
 import { User } from "lucia";
+import { AccountCircle } from "@mui/icons-material";
 
 export default function Navbar({ user }: { user: User | null }) {
   const path = usePathname();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
+  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
 
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElNav(event.currentTarget);
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElUser(event.currentTarget);
   };
 
-  if (path === "/login" || path === "signup") {
+  const handleCloseNavMenu = () => {
+    setAnchorElNav(null);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  if (path === "/login" || path === "/signup") {
     return null;
   }
 
@@ -40,97 +53,164 @@ export default function Navbar({ user }: { user: User | null }) {
     await logout();
   };
 
+  const pages = [
+    { path: "/", name: "Home" },
+    { path: "/pantry", name: "Pantry" },
+    { path: "/recipe", name: "Recipes" },
+  ];
+
   return (
-    <Box sx={{ flexGrow: 1, display: "sticky" }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Link href={"/"}>
+    <AppBar position="static">
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
-              size="small"
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleOpenNavMenu}
               color="inherit"
-              aria-label="menu"
-              sx={{ mr: 1 }}
             >
-              <Image
-                src={"/logo.png"}
-                alt="PantryPal Logo"
-                width={40}
-                height={40}
-              />
+              <MenuIcon />
             </IconButton>
-          </Link>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            PantryPal{" "}
-            <Link href={"https://tahmid.io"} className="hidden md:inline">
-              by <span className="underline">Tahmid Ahmed</span>
-            </Link>
-          </Typography>
-          {user ? (
-            <div>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenu}
-                color="inherit"
-              >
-                <Image
-                  src={user.avatar_url || ""}
-                  alt="Profile Picture"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorElNav}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "left",
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "left",
+              }}
+              open={Boolean(anchorElNav)}
+              onClose={handleCloseNavMenu}
+              sx={{
+                display: { xs: "block", md: "none" },
+              }}
+            >
+              {pages.map((page) => {
+                if (page.path === "/")
+                  return (
+                    <Link href={page.path} key={page.name}>
+                      <MenuItem key={page.path}>
+                        <Image
+                          src={"/logo.png"}
+                          alt="PantryPal Logo"
+                          width={40}
+                          height={40}
+                          className="flex md:hidden"
+                        />
+                      </MenuItem>
+                    </Link>
+                  );
+                return (
+                  <Link href={page.path} key={page.name}>
+                    <MenuItem
+                      key={page.name}
+                      onClick={() => {
+                        handleCloseNavMenu();
+                      }}
+                    >
+                      <Typography textAlign="center">{page.name}</Typography>
+                    </MenuItem>
+                  </Link>
+                );
+              })}
+            </Menu>
+          </Box>
+          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+            {pages.map((page) => {
+              if (page.path === "/")
+                return (
+                  <Link href={page.path} key={page.name}>
+                    <IconButton
+                      size="small"
+                      color="inherit"
+                      aria-label="menu"
+                      sx={{ my: 1, display: "block" }}
+                      key={page.name}
+                    >
+                      <Image
+                        src={"/logo.png"}
+                        alt="PantryPal Logo"
+                        width={40}
+                        height={40}
+                        className="hidden md:flex"
+                      />
+                    </IconButton>
+                  </Link>
+                );
+              return (
+                <Link href={page.path} key={page.name}>
+                  <Button
+                    key={page.name}
+                    onClick={handleCloseNavMenu}
+                    sx={{ my: 2, color: "white", display: "block" }}
+                  >
+                    {page.name}
+                  </Button>
+                </Link>
+              );
+            })}
+          </Box>
+
+          <Box sx={{ flexGrow: 0 }}>
+            <Tooltip title="Open settings">
+              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                {user ? (
+                  <Avatar alt={user.username} src={user.avatar_url || ""} />
+                ) : (
+                  <AccountCircle />
+                )}
               </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem disabled>
-                  {user.username} ({user.email})
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleClose();
-                    handleLogout();
-                  }}
-                  color="red"
-                >
-                  Logout
-                </MenuItem>
-              </Menu>
-            </div>
-          ) : (
-            // <Button
-            //   color="error"
-            //   size="medium"
-            //   variant="contained"
-            //   onClick={() => {
-            //     handleLogout();
-            //   }}
-            // >
-            //   Log Out
-            // </Button>
-            <Link href={"/dashboard"}>
-              <Button color="success" size="medium" variant="contained">
-                Get Started
-              </Button>
-            </Link>
-          )}
+            </Tooltip>
+            <Menu
+              sx={{ mt: "45px" }}
+              id="menu-appbar"
+              anchorEl={anchorElUser}
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+            >
+              {user ? (
+                <>
+                  <MenuItem disabled>
+                    {user.username}{" "}
+                    {user.email ? `(${user.email})` : "(No email)"}
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleCloseUserMenu();
+                      handleLogout();
+                    }}
+                    color="red"
+                  >
+                    Logout
+                  </MenuItem>
+                </>
+              ) : (
+                <Link href="/login">
+                  <MenuItem onClick={handleCloseUserMenu}>
+                    <Typography textAlign="center">Login</Typography>
+                  </MenuItem>
+                </Link>
+              )}
+            </Menu>
+          </Box>
         </Toolbar>
-      </AppBar>
-    </Box>
+      </Container>
+    </AppBar>
   );
 }

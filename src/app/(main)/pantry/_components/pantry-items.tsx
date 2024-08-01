@@ -1,11 +1,11 @@
 "use client";
 
-import AddPantryItem from "@/app/(main)/dashboard/_components/add-pantry-item/add-pantry-item";
-import DeletePantryItem from "@/app/(main)/dashboard/_components/delete-pantry-item/delete-pantry-item";
-import EditPantryItem from "@/app/(main)/dashboard/_components/edit-pantry-item/edit-pantry-item";
-import Search from "@/app/(main)/dashboard/_components/search";
-import { formatFutureTime } from "@/app/(main)/dashboard/_utils/formatTime";
-import { pantryItem } from "@/app/(main)/dashboard/types";
+import AddPantryItem from "@/app/(main)/pantry/_components/add-pantry-item/add-pantry-item";
+import DeletePantryItem from "@/app/(main)/pantry/_components/delete-pantry-item/delete-pantry-item";
+import EditPantryItem from "@/app/(main)/pantry/_components/edit-pantry-item/edit-pantry-item";
+import Search from "@/app/(main)/pantry/_components/search";
+import { formatFutureTime } from "@/app/(main)/pantry/_utils/formatTime";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { Error } from "@mui/icons-material";
 import { Backdrop, CircularProgress, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";

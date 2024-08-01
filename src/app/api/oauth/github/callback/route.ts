@@ -37,7 +37,7 @@ export async function GET(request: Request): Promise<Response> {
           github_id: String(githubUser.id),
           username: githubUser.login,
           avatar_url: githubUser.avatar_url,
-          email: githubUser.email,
+          email: githubUser.email ?? undefined,
         },
       });
 
@@ -64,7 +64,7 @@ export async function GET(request: Request): Promise<Response> {
         github_id: String(githubUser.id),
         username: githubUser.login,
         avatar_url: githubUser.avatar_url,
-        email: githubUser.email,
+        email: githubUser.email ?? undefined,
       },
     });
 
@@ -82,6 +82,7 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
   } catch (e) {
+    console.error(e);
     // the specific error message depends on the provider
     if (e instanceof OAuth2RequestError) {
       // invalid code

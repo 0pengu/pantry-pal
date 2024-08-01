@@ -1,6 +1,6 @@
 import { validateRequest } from "@/app/(auth)/validate/actions";
-import PantryItems from "@/app/(main)/dashboard/_components/pantry-items";
-import { pantryItem } from "@/app/(main)/dashboard/types";
+import PantryItems from "@/app/(main)/pantry/_components/pantry-items";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { db } from "@/utils/firebase";
 import { redirect } from "next/navigation";
 

@@ -1,4 +1,4 @@
-import { pantryItem } from "@/app/(main)/dashboard/types";
+import { pantryItem } from "@/app/(main)/pantry/types";
 import { Input } from "@mui/material";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 

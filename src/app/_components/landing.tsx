@@ -46,7 +46,7 @@ export default function Landing() {
         }}
         className="py-4"
       >
-        <Link href={"/dashboard"}>
+        <Link href={"/pantry"}>
           <Button color="success" size="large" variant="contained">
             Get Started
           </Button>

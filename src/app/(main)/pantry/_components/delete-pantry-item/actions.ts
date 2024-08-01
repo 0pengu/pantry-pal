@@ -1,7 +1,7 @@
 "use server";
 
 import { validateRequest } from "@/app/(auth)/validate/actions";
-import { deletePantryItemSchema } from "@/app/(main)/dashboard/_components/delete-pantry-item/types";
+import { deletePantryItemSchema } from "@/app/(main)/pantry/_components/delete-pantry-item/types";
 import { db } from "@/utils/firebase";
 import { z } from "zod";
 
