@@ -43,7 +43,7 @@ export default function PantryItems({
       >
         <CircularProgress color="inherit" />
       </Backdrop>
-      {pantryItems.length === 0 && (
+      {filteredPantryItems.length === 0 && (
         <Typography variant="h4" className="p-2">
           No items in your pantry
         </Typography>

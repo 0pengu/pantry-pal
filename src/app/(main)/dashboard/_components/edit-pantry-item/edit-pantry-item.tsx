@@ -25,6 +25,7 @@ import toast from "react-hot-toast";
 import { z } from "zod";
 import { useCustomDropzone } from "@/app/(main)/dashboard/_components/custom-dropzone";
 import { uploadImage } from "@/app/(main)/dashboard/_components/add-pantry-item/actions";
+import { useGlobalDisableStore } from "@/app/(main)/store";
 
 export default function EditPantryItem({
   user,
@@ -39,12 +40,20 @@ export default function EditPantryItem({
     pantryItem.imageUrl
   );
 
+  const [disabled, setDisabled] = useGlobalDisableStore((state) => [
+    state.disabled,
+    state.setDisabled,
+  ]);
+
   const handleClickOpen = () => {
     setOpen(true);
   };
 
   const handleClose = () => {
-    setOpen(false);
+    if (!disabled) {
+      setOpen(false);
+      setImageUrl(pantryItem.imageUrl);
+    }
   };
 
   const form = useForm<z.infer<typeof editPantryItemSchema>>({
@@ -62,6 +71,7 @@ export default function EditPantryItem({
   });
 
   const onSubmit = async (data: z.infer<typeof editPantryItemSchema>) => {
+    setDisabled(true);
     const response = editPantryItem({ ...data, imageUrl });
     toast.promise(response, {
       loading: "Editing item in pantry...",
@@ -69,6 +79,7 @@ export default function EditPantryItem({
       error: "Error editing item in pantry",
     });
     const { success } = await response;
+    setDisabled(false);
     if (!success) {
       return;
     }
@@ -81,10 +92,11 @@ export default function EditPantryItem({
       imageUrl: data.imageUrl,
     });
     router.refresh();
-    handleClose();
+    setOpen(false);
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
+    setDisabled(true);
     const file = acceptedFiles[0];
     const formData = new FormData();
     formData.append("image", file);
@@ -97,6 +109,7 @@ export default function EditPantryItem({
     const blobResult = await response;
     const newImageUrl = blobResult.url;
     setImageUrl(newImageUrl);
+    setDisabled(false);
   };
 
   const {
@@ -132,6 +145,7 @@ export default function EditPantryItem({
             fullWidth
             variant="standard"
             error={!!form.formState.errors.name}
+            disabled={disabled}
           />
           {form.formState.errors.name && (
             <p>{form.formState.errors.name.message}</p>
@@ -152,6 +166,7 @@ export default function EditPantryItem({
             onChange={(e) =>
               form.setValue("quantity", parseInt(e.target.value))
             }
+            disabled={disabled}
           />
           {form.formState.errors.quantity && (
             <p>{form.formState.errors.quantity.message}</p>
@@ -167,6 +182,7 @@ export default function EditPantryItem({
               shrink: true,
             }}
             error={!!form.formState.errors.expirationDate}
+            disabled={disabled}
           />
           {form.formState.errors.expirationDate && (
             <p>{form.formState.errors.expirationDate.message}</p>
@@ -179,6 +195,7 @@ export default function EditPantryItem({
             variant="standard"
             type="text"
             error={!!form.formState.errors.notes}
+            disabled={disabled}
           />
           {form.formState.errors.notes && (
             <p>{form.formState.errors.notes.message}</p>
@@ -198,6 +215,7 @@ export default function EditPantryItem({
                 onClick={openFile}
                 className="mt-2"
                 fullWidth
+                disabled={disabled}
               >
                 Replace Image
               </Button>
@@ -207,6 +225,7 @@ export default function EditPantryItem({
                 onClick={() => setImageUrl(undefined)}
                 className="mt-2"
                 fullWidth
+                disabled={disabled}
               >
                 Remove Image
               </Button>
@@ -226,7 +245,7 @@ export default function EditPantryItem({
                   Drag and drop some files here, or click to select files
                 </p>
               )}
-              <Button type="button" onClick={openFile}>
+              <Button type="button" onClick={openFile} disabled={disabled}>
                 Browse Files
               </Button>
               <p className="text-xs">Images only. Max 4 MB. One file only.</p>
@@ -234,10 +253,12 @@ export default function EditPantryItem({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="github">
+          <Button onClick={handleClose} color="github" disabled={disabled}>
             Cancel
           </Button>
-          <Button type="submit">Submit</Button>
+          <Button type="submit" disabled={disabled}>
+            Submit
+          </Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

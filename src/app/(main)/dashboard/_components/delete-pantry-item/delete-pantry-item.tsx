@@ -1,3 +1,5 @@
+"use client";
+
 import { deletePantryItemSchema } from "@/app/(main)/dashboard/_components/delete-pantry-item/types";
 import { formatFutureTime } from "@/app/(main)/dashboard/_utils/formatTime";
 import { pantryItem } from "@/app/(main)/dashboard/types";
@@ -10,18 +12,16 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  TextField,
 } from "@mui/material";
 import { User } from "lucia";
 import { motion } from "framer-motion";
-import moment from "moment";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Error, Check } from "@mui/icons-material";
 import { deletePantryItem } from "@/app/(main)/dashboard/_components/delete-pantry-item/actions";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { useGlobalDisableStore } from "@/app/(main)/store";
 
 export default function DeletePantryItem({
   user,
@@ -33,13 +33,19 @@ export default function DeletePantryItem({
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
+  const [disabled, setDisabled] = useGlobalDisableStore((state) => [
+    state.disabled,
+    state.setDisabled,
+  ]);
 
   const handleClickOpen = () => {
     setOpen(true);
   };
 
   const handleClose = () => {
-    setOpen(false);
+    if (!disabled) {
+      setOpen(false);
+    }
   };
 
   const form = useForm<z.infer<typeof deletePantryItemSchema>>({
@@ -50,6 +56,7 @@ export default function DeletePantryItem({
   });
 
   const onSubmit = async (data: z.infer<typeof deletePantryItemSchema>) => {
+    setDisabled(true);
     const response = deletePantryItem(data);
     toast.promise(response, {
       loading: "Deleting item from pantry...",
@@ -57,6 +64,7 @@ export default function DeletePantryItem({
       error: "Error deleting item from pantry",
     });
     const { success } = await response;
+    setDisabled(false);
     if (!success) {
       return;
     }
@@ -69,7 +77,12 @@ export default function DeletePantryItem({
 
   return (
     <React.Fragment>
-      <Button variant="contained" onClick={handleClickOpen} color="error">
+      <Button
+        variant="contained"
+        onClick={handleClickOpen}
+        color="error"
+        disabled={disabled}
+      >
         <Delete />
       </Button>
       <Dialog
@@ -80,7 +93,7 @@ export default function DeletePantryItem({
           onSubmit: form.handleSubmit(onSubmit),
         }}
       >
-        <DialogTitle>Add Item to Pantry</DialogTitle>
+        <DialogTitle>Delete Item from Pantry</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this item?
@@ -95,13 +108,11 @@ export default function DeletePantryItem({
           >
             <div className="flex justify-between">
               <h2>
-                <div className="inline mr-1 ">
-                  {pantryItem.expirationDate < new Date() ? (
-                    <Error />
-                  ) : (
-                    <Check />
-                  )}
-                </div>
+                {pantryItem.expirationDate < new Date() && (
+                  <div className="inline bg-black text-white rounded-full px-2 text-center">
+                    !
+                  </div>
+                )}{" "}
                 {pantryItem.name}{" "}
                 <div className="inline bg-black text-white rounded-full px-2 text-center">
                   {pantryItem.quantity}
@@ -115,10 +126,10 @@ export default function DeletePantryItem({
           </motion.div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="github">
+          <Button onClick={handleClose} color="github" disabled={disabled}>
             Cancel
           </Button>
-          <Button type="submit" color="error">
+          <Button type="submit" color="error" disabled={disabled}>
             Delete
           </Button>
         </DialogActions>

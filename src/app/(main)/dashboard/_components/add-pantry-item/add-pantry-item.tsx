@@ -3,19 +3,23 @@
 import {
   addPantryItem,
   uploadImage,
+  uploadImageWithAi,
 } from "@/app/(main)/dashboard/_components/add-pantry-item/actions";
 import { addPantryItemSchema } from "@/app/(main)/dashboard/_components/add-pantry-item/types";
 import { useCustomDropzone } from "@/app/(main)/dashboard/_components/custom-dropzone";
+import { useGlobalDisableStore } from "@/app/(main)/store";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Add, Check, Error } from "@mui/icons-material";
+import { Add, Check, Error, X } from "@mui/icons-material";
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   TextField,
+  ToggleButton,
   Typography,
 } from "@mui/material";
 import { User } from "lucia";
@@ -24,7 +28,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
+import toast, { CheckmarkIcon, ErrorIcon } from "react-hot-toast";
 import { z } from "zod";
 
 export default function AddPantryItem({ user }: { user: User }) {
@@ -33,12 +37,24 @@ export default function AddPantryItem({ user }: { user: User }) {
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
 
+  const [useAi, setUseAi] = useState(true);
+
+  const [disabled, setDisabled] = useGlobalDisableStore((state) => [
+    state.disabled,
+    state.setDisabled,
+  ]);
+
   const handleClickOpen = () => {
     setOpen(true);
   };
 
   const handleClose = () => {
-    setOpen(false);
+    if (!disabled) {
+      setOpen(false);
+    }
+    form.reset();
+    setUseAi(true);
+    setImageUrl(undefined);
   };
 
   // Function to get default expiration date in local timezone
@@ -58,6 +74,7 @@ export default function AddPantryItem({ user }: { user: User }) {
   });
 
   const onSubmit = async (data: z.infer<typeof addPantryItemSchema>) => {
+    setDisabled(true);
     const response = addPantryItem({ ...data, imageUrl });
     toast.promise(response, {
       loading: "Adding item to pantry...",
@@ -65,6 +82,7 @@ export default function AddPantryItem({ user }: { user: User }) {
       error: "Error adding item to pantry",
     });
     const { success } = await response;
+    setDisabled(false);
     if (!success) {
       return;
     }
@@ -79,18 +97,43 @@ export default function AddPantryItem({ user }: { user: User }) {
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
+    setDisabled(true);
     const file = acceptedFiles[0];
     const formData = new FormData();
     formData.append("image", file);
-    const response = uploadImage(formData);
-    toast.promise(response, {
-      loading: "Adding item to pantry...",
-      success: "Item added to pantry",
-      error: "Error adding item to pantry",
-    });
-    const blobResult = await response;
-    const imageUrl = blobResult.url;
-    setImageUrl(imageUrl);
+
+    if (useAi) {
+      const response = uploadImageWithAi(formData);
+      toast.promise(response, {
+        loading: "Uploading image...",
+        success: "Image uploaded",
+        error: "Error uploading image",
+      });
+
+      const result = await response;
+      setDisabled(false);
+
+      form.setValue("name", result.name);
+      form.setValue("quantity", result.quantity);
+      form.setValue(
+        "expirationDate",
+        moment(result.expirationDate).format("YYYY-MM-DDTHH:mm")
+      );
+      form.setValue("notes", result.notes);
+      setImageUrl(result.imageUrl);
+    } else {
+      const response = uploadImage(formData);
+      toast.promise(response, {
+        loading: "Uploading image...",
+        success: "Image uploaded",
+        error: "Error uploading image",
+      });
+
+      const blobResult = await response;
+      setDisabled(false);
+      const imageUrl = blobResult.url;
+      setImageUrl(imageUrl);
+    }
   };
 
   const {
@@ -118,6 +161,18 @@ export default function AddPantryItem({ user }: { user: User }) {
           <DialogContentText>
             Please complete all required fields
           </DialogContentText>
+          <ToggleButton
+            value="check"
+            selected={useAi}
+            onChange={() => setUseAi((prev) => !prev)}
+          >
+            {useAi ? <CheckmarkIcon /> : <ErrorIcon />}
+            <span className="pl-2">Use AI to fill in details</span>
+          </ToggleButton>
+          <Typography className="pt-2" variant="body2">
+            Keep in mind that using AI will overwrite any existing data on the
+            form
+          </Typography>
           <TextField
             {...form.register("name")}
             label="What is the name of the item?"
@@ -126,6 +181,8 @@ export default function AddPantryItem({ user }: { user: User }) {
             fullWidth
             variant="standard"
             error={!!form.formState.errors.name}
+            disabled={disabled}
+            InputLabelProps={{ shrink: true }}
           />
           {form.formState.errors.name && (
             <p>{form.formState.errors.name.message}</p>
@@ -146,6 +203,8 @@ export default function AddPantryItem({ user }: { user: User }) {
             onChange={(e) =>
               form.setValue("quantity", parseInt(e.target.value))
             }
+            disabled={disabled}
+            InputLabelProps={{ shrink: true }}
           />
           {form.formState.errors.quantity && (
             <p>{form.formState.errors.quantity.message}</p>
@@ -161,6 +220,7 @@ export default function AddPantryItem({ user }: { user: User }) {
               shrink: true,
             }}
             error={!!form.formState.errors.expirationDate}
+            disabled={disabled}
           />
           {form.formState.errors.expirationDate && (
             <p>{form.formState.errors.expirationDate.message}</p>
@@ -171,8 +231,12 @@ export default function AddPantryItem({ user }: { user: User }) {
             margin="dense"
             fullWidth
             variant="standard"
+            InputLabelProps={{
+              shrink: true,
+            }}
             type="text"
             error={!!form.formState.errors.notes}
+            disabled={disabled}
           />
           {form.formState.errors.notes && (
             <p>{form.formState.errors.notes.message}</p>
@@ -192,6 +256,7 @@ export default function AddPantryItem({ user }: { user: User }) {
                 onClick={openFile}
                 className="mt-2"
                 fullWidth
+                disabled={disabled}
               >
                 Replace Image
               </Button>
@@ -201,6 +266,7 @@ export default function AddPantryItem({ user }: { user: User }) {
                 onClick={() => setImageUrl(undefined)}
                 className="mt-2"
                 fullWidth
+                disabled={disabled}
               >
                 Remove Image
               </Button>
@@ -220,7 +286,7 @@ export default function AddPantryItem({ user }: { user: User }) {
                   Drag and drop some files here, or click to select files
                 </p>
               )}
-              <Button type="button" onClick={openFile}>
+              <Button type="button" onClick={openFile} disabled={disabled}>
                 Browse Files
               </Button>
               <p className="text-xs">Images only. Max 4 MB. One file only.</p>
@@ -228,10 +294,12 @@ export default function AddPantryItem({ user }: { user: User }) {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="github">
+          <Button onClick={handleClose} color="github" disabled={disabled}>
             Cancel
           </Button>
-          <Button type="submit">Submit</Button>
+          <Button type="submit" disabled={disabled}>
+            Submit
+          </Button>
         </DialogActions>
       </Dialog>
     </React.Fragment>

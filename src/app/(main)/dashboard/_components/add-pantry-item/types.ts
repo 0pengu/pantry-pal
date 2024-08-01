@@ -18,3 +18,10 @@ export const addPantryItemSchema = z.object({
   notes: z.string().max(30000).optional(),
   imageUrl: z.string().optional(),
 });
+
+export const aiPantryItemSchema = z.object({
+  name: z.string().min(1).max(100),
+  quantity: z.number().min(1).max(1000),
+  notes: z.string().max(30000).optional(),
+  imageUrl: z.string().optional(),
+});
