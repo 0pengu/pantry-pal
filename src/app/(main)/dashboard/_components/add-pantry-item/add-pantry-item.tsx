@@ -158,7 +158,12 @@ export default function AddPantryItem({ user }: { user: User }) {
 
   return (
     <React.Fragment>
-      <Button variant="contained" onClick={handleClickOpen} color="success">
+      <Button
+        variant="contained"
+        onClick={handleClickOpen}
+        color="success"
+        disabled={disabled}
+      >
         <Add />
       </Button>
       <Dialog
