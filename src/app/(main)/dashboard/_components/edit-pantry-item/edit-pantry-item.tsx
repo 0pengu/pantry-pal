@@ -72,27 +72,33 @@ export default function EditPantryItem({
 
   const onSubmit = async (data: z.infer<typeof editPantryItemSchema>) => {
     setDisabled(true);
-    const response = editPantryItem({ ...data, imageUrl });
-    toast.promise(response, {
-      loading: "Editing item in pantry...",
-      success: "Item edited in pantry",
-      error: "Error editing item in pantry",
-    });
-    const { success } = await response;
-    setDisabled(false);
-    if (!success) {
-      return;
+    try {
+      const response = editPantryItem({ ...data, imageUrl });
+      toast.promise(response, {
+        loading: "Editing item in pantry...",
+        success: "Item edited in pantry",
+        error: "Error editing item in pantry",
+      });
+      const { success } = await response;
+      setDisabled(false);
+      if (!success) {
+        return;
+      }
+      form.reset({
+        id: data.id,
+        name: data.name,
+        quantity: data.quantity,
+        expirationDate: moment(data.expirationDate).format("YYYY-MM-DDTHH:mm"),
+        notes: data.notes,
+        imageUrl: data.imageUrl,
+      });
+      router.refresh();
+      setOpen(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDisabled(false);
     }
-    form.reset({
-      id: data.id,
-      name: data.name,
-      quantity: data.quantity,
-      expirationDate: moment(data.expirationDate).format("YYYY-MM-DDTHH:mm"),
-      notes: data.notes,
-      imageUrl: data.imageUrl,
-    });
-    router.refresh();
-    setOpen(false);
   };
 
   const onDrop = async (acceptedFiles: File[]) => {

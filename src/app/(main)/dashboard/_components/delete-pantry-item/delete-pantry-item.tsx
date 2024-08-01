@@ -57,22 +57,28 @@ export default function DeletePantryItem({
 
   const onSubmit = async (data: z.infer<typeof deletePantryItemSchema>) => {
     setDisabled(true);
-    const response = deletePantryItem(data);
-    toast.promise(response, {
-      loading: "Deleting item from pantry...",
-      success: "Item deleted from pantry",
-      error: "Error deleting item from pantry",
-    });
-    const { success } = await response;
-    setDisabled(false);
-    if (!success) {
-      return;
+    try {
+      const response = deletePantryItem(data);
+      toast.promise(response, {
+        loading: "Deleting item from pantry...",
+        success: "Item deleted from pantry",
+        error: "Error deleting item from pantry",
+      });
+      const { success } = await response;
+      setDisabled(false);
+      if (!success) {
+        return;
+      }
+      form.reset({
+        id: "",
+      });
+      handleClose();
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDisabled(false);
     }
-    form.reset({
-      id: "",
-    });
-    handleClose();
-    router.refresh();
   };
 
   return (

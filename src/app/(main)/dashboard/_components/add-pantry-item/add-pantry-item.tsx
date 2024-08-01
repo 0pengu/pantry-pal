@@ -75,64 +75,77 @@ export default function AddPantryItem({ user }: { user: User }) {
 
   const onSubmit = async (data: z.infer<typeof addPantryItemSchema>) => {
     setDisabled(true);
-    const response = addPantryItem({ ...data, imageUrl });
-    toast.promise(response, {
-      loading: "Adding item to pantry...",
-      success: "Item added to pantry",
-      error: "Error adding item to pantry",
-    });
-    const { success } = await response;
-    setDisabled(false);
-    if (!success) {
-      return;
+    try {
+      const response = addPantryItem({ ...data, imageUrl });
+      toast.promise(response, {
+        loading: "Adding item to pantry...",
+        success: "Item added to pantry",
+        error: "Error adding item to pantry",
+      });
+      const { success } = await response;
+      setDisabled(false);
+      if (!success) {
+        return;
+      }
+      form.reset({
+        name: "",
+        quantity: 1,
+        expirationDate: getDefaultExpirationDate(),
+        notes: "",
+      });
+      router.refresh();
+      handleClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDisabled(false);
     }
-    form.reset({
-      name: "",
-      quantity: 1,
-      expirationDate: getDefaultExpirationDate(),
-      notes: "",
-    });
-    router.refresh();
-    handleClose();
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
     setDisabled(true);
-    const file = acceptedFiles[0];
-    const formData = new FormData();
-    formData.append("image", file);
+    try {
+      const file = acceptedFiles[0];
+      const formData = new FormData();
+      formData.append("image", file);
 
-    if (useAi) {
-      const response = uploadImageWithAi(formData);
-      toast.promise(response, {
-        loading: "Uploading image...",
-        success: "Image uploaded",
-        error: "Error uploading image",
-      });
+      if (useAi) {
+        const response = uploadImageWithAi(formData);
+        toast.promise(response, {
+          loading: "Uploading image...",
+          success: "Image uploaded",
+          error: "Error uploading image",
+        });
 
-      const result = await response;
+        const result = await response;
+        setDisabled(false);
+
+        form.setValue("name", result.name);
+        form.setValue("quantity", result.quantity);
+        form.setValue(
+          "expirationDate",
+          moment(result.expirationDate).format("YYYY-MM-DDTHH:mm")
+        );
+        form.setValue("notes", result.notes);
+        setImageUrl(result.imageUrl);
+      } else {
+        const response = uploadImage(formData);
+        toast.promise(response, {
+          loading: "Uploading image...",
+          success: "Image uploaded",
+          error: "Error uploading image",
+        });
+
+        const blobResult = await response;
+        setDisabled(false);
+        const imageUrl = blobResult.url;
+        setImageUrl(imageUrl);
+      }
+    } catch (error) {
+      console.error(error);
       setDisabled(false);
-
-      form.setValue("name", result.name);
-      form.setValue("quantity", result.quantity);
-      form.setValue(
-        "expirationDate",
-        moment(result.expirationDate).format("YYYY-MM-DDTHH:mm")
-      );
-      form.setValue("notes", result.notes);
-      setImageUrl(result.imageUrl);
-    } else {
-      const response = uploadImage(formData);
-      toast.promise(response, {
-        loading: "Uploading image...",
-        success: "Image uploaded",
-        error: "Error uploading image",
-      });
-
-      const blobResult = await response;
+    } finally {
       setDisabled(false);
-      const imageUrl = blobResult.url;
-      setImageUrl(imageUrl);
     }
   };
 
