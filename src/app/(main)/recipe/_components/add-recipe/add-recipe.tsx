@@ -77,9 +77,9 @@ export default function AddRecipe({
     resolver: zodResolver(addRecipeSchema),
     defaultValues: {
       title: "",
-      pantryItems: [{ itemId: "", quantity: 1 }],
+      //   pantryItems: [{ itemId: "", quantity: 1 }],
       steps: [""],
-      notes: "",
+      //   notes: "",
       imageUrl: "",
     },
   });
@@ -99,7 +99,7 @@ export default function AddRecipe({
     remove: removeStep,
   } = useFieldArray({
     control: form.control,
-    name: "steps",
+    name: "pantryItems",
   });
 
   const onSubmit = async (data: z.infer<typeof addRecipeSchema>) => {
@@ -111,17 +111,17 @@ export default function AddRecipe({
         success: "Recipe added successfully",
         error: "Error adding recipe",
       });
-      const { success } = await response;
-      setDisabled(false);
-      if (!success) {
-        return;
-      }
-      form.reset({
-        title: "",
-        pantryItems: [{ itemId: "", quantity: 1 }],
-        steps: [""],
-        notes: "",
-      });
+      //   const { success } = await response;
+      //   setDisabled(false);
+      //   if (!success) {
+      //     return;
+      //   }
+      //   form.reset({
+      //     title: "",
+      //     pantryItems: [{ itemId: "", quantity: 1 }],
+      //     steps: [""],
+      //     notes: "",
+      //   });
       router.refresh();
       handleClose();
     } catch (error) {
