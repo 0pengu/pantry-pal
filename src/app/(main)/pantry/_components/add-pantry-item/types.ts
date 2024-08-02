@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const addPantryItemSchema = z.object({
   name: z.string().min(1).max(100),
-  quantity: z.number().min(1).max(1000),
+  quantity: z.number().min(1).max(1000).int(),
   expirationDate: z
     .string()
     .refine(

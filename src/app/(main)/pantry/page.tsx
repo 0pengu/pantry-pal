@@ -22,5 +22,5 @@ export default async function DashboardPage() {
     } as pantryItem;
   });
 
-  return <PantryItems user={user} pantryItems={pantryItems} />;
+  return <PantryItems pantryItems={pantryItems} />;
 }

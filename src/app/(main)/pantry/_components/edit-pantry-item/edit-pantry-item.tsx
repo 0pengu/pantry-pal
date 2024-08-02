@@ -28,10 +28,8 @@ import { uploadImage } from "@/app/(main)/pantry/_components/add-pantry-item/act
 import { useGlobalDisableStore } from "@/app/(main)/store";
 
 export default function EditPantryItem({
-  user,
   pantryItem,
 }: {
-  user: User;
   pantryItem: pantryItem;
 }) {
   const router = useRouter();

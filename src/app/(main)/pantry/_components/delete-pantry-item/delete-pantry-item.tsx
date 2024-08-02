@@ -24,10 +24,8 @@ import toast from "react-hot-toast";
 import { useGlobalDisableStore } from "@/app/(main)/store";
 
 export default function DeletePantryItem({
-  user,
   pantryItem,
 }: {
-  user: User;
   pantryItem: pantryItem;
 }) {
   const router = useRouter();

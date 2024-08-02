@@ -3,11 +3,12 @@
 import AddPantryItem from "@/app/(main)/pantry/_components/add-pantry-item/add-pantry-item";
 import DeletePantryItem from "@/app/(main)/pantry/_components/delete-pantry-item/delete-pantry-item";
 import EditPantryItem from "@/app/(main)/pantry/_components/edit-pantry-item/edit-pantry-item";
+import MassAddPantryItem from "@/app/(main)/pantry/_components/mass-add-pantry-item/mass-add-pantry-item";
 import Search from "@/app/(main)/pantry/_components/search";
 import { formatFutureTime } from "@/app/(main)/pantry/_utils/formatTime";
 import { pantryItem } from "@/app/(main)/pantry/types";
 import { Error } from "@mui/icons-material";
-import { Backdrop, CircularProgress, Typography } from "@mui/material";
+import { Backdrop, Button, CircularProgress, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
 import { User } from "lucia";
 import Image from "next/image";
@@ -15,10 +16,8 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 
 export default function PantryItems({
-  user,
   pantryItems,
 }: {
-  user: User;
   pantryItems: pantryItem[];
 }) {
   const [loading, setLoading] = useState(false);
@@ -28,24 +27,18 @@ export default function PantryItems({
   return (
     <main className="h-[calc(100vh-200px)]">
       <Typography variant="h3" className="p-2 pb-0">
-        Welcome to your Pantry
+        Your pantry
       </Typography>
       <div className="p-2 space-x-2">
-        <AddPantryItem user={user} />
+        <AddPantryItem />
         <Search
           pantryItems={pantryItems}
           setFilteredPantryItems={setFilteredPantryItems}
         />
       </div>
-      <Backdrop
-        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={loading}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
       {filteredPantryItems.length === 0 && (
         <Typography variant="h4" className="p-2">
-          No items in your pantry
+          No pantry items found
         </Typography>
       )}
       <motion.div
@@ -77,8 +70,8 @@ export default function PantryItems({
                   </div>
                 </h2>
                 <div className="space-x-2">
-                  <EditPantryItem user={user} pantryItem={item} />
-                  <DeletePantryItem user={user} pantryItem={item} />
+                  <EditPantryItem pantryItem={item} />
+                  <DeletePantryItem pantryItem={item} />
                 </div>
               </div>
               <div className="bg-black text-white rounded-full my-4 p-2 text-center">
@@ -94,6 +87,7 @@ export default function PantryItems({
                       alt="Uploaded"
                       width={200}
                       height={200}
+                      className="rounded-md border border-gray-200"
                     />
                   </div>
                 </>

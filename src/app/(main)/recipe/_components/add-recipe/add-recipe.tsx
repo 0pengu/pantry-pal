@@ -1,13 +1,11 @@
 "use client";
 
+import { addRecipe } from "@/app/(main)/recipe/_components/add-recipe/actions";
 import {
-  addPantryItem,
-  uploadImage,
-  uploadImageWithAi,
-} from "@/app/(main)/pantry/_components/add-pantry-item/actions";
-import { addPantryItemSchema } from "@/app/(main)/pantry/_components/add-pantry-item/types";
+  addRecipeSchema,
+  recipeItemSchema,
+} from "@/app/(main)/recipe/_components/add-recipe/types";
 import { useCustomDropzone } from "@/app/(main)/pantry/_components/custom-dropzone";
-import MassAddPantryItem from "@/app/(main)/pantry/_components/mass-add-pantry-item/mass-add-pantry-item";
 import { pantryItem } from "@/app/(main)/pantry/types";
 import { useGlobalDisableStore } from "@/app/(main)/store";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +21,10 @@ import {
   TextField,
   ToggleButton,
   Typography,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
 } from "@mui/material";
 import { readStreamableValue } from "ai/rsc";
 import { User } from "lucia";
@@ -30,7 +32,7 @@ import moment from "moment-timezone";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import toast, { CheckmarkIcon, ErrorIcon } from "react-hot-toast";
 import { z } from "zod";
 
@@ -47,20 +49,20 @@ const isValidUrl = (urlString: string) => {
   return !!urlPattern.test(urlString);
 };
 
-export default function AddPantryItem() {
+export default function AddRecipe({
+  pantryItems,
+}: {
+  pantryItems: pantryItem[];
+}) {
   const router = useRouter();
 
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
 
-  const [useAi, setUseAi] = useState(true);
-
   const [disabled, setDisabled] = useGlobalDisableStore((state) => [
     state.disabled,
     state.setDisabled,
   ]);
-
-  const [streamedResponse, setStreamedResponse] = useState<string>("");
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -71,51 +73,46 @@ export default function AddPantryItem() {
       setOpen(false);
     }
     form.reset();
-    setUseAi(true);
     setImageUrl(undefined);
   };
 
-  // Function to get default expiration date in local timezone
-  const getDefaultExpirationDate = () => {
-    return moment().add(1, "hour").add(1, "minute").format("YYYY-MM-DDTHH:mm");
-  };
-
-  const form = useForm<z.infer<typeof addPantryItemSchema>>({
-    resolver: zodResolver(addPantryItemSchema),
+  const form = useForm<z.infer<typeof addRecipeSchema>>({
+    resolver: zodResolver(addRecipeSchema),
     defaultValues: {
-      name: "",
-      quantity: 1,
-      expirationDate: getDefaultExpirationDate(),
+      title: "",
+      pantryItems: [{ itemId: "", quantity: 1 }],
+      steps: [""],
       notes: "",
       imageUrl: "",
     },
   });
 
-  useEffect(() => {
-    if (streamedResponse) {
-      try {
-        const parsedResponse = JSON.parse(streamedResponse) as pantryItem;
-        form.setValue("name", parsedResponse.name);
-        form.setValue("quantity", parsedResponse.quantity);
-        form.setValue(
-          "expirationDate",
-          moment(parsedResponse.expirationDate).format("YYYY-MM-DDTHH:mm")
-        );
-        form.setValue("notes", parsedResponse.notes);
-      } catch (error) {
-        console.error("Failed to validate streamed response", error);
-      }
-    }
-  }, [form, streamedResponse]);
+  const {
+    fields: pantryFields,
+    append: appendPantry,
+    remove: removePantry,
+  } = useFieldArray({
+    control: form.control,
+    name: "pantryItems",
+  });
 
-  const onSubmit = async (data: z.infer<typeof addPantryItemSchema>) => {
+  const {
+    fields: stepFields,
+    append: appendStep,
+    remove: removeStep,
+  } = useFieldArray({
+    control: form.control,
+    name: "steps",
+  });
+
+  const onSubmit = async (data: z.infer<typeof addRecipeSchema>) => {
     setDisabled(true);
     try {
-      const response = addPantryItem({ ...data, imageUrl });
+      const response = addRecipe({ ...data, imageUrl });
       toast.promise(response, {
-        loading: "Adding item to pantry...",
-        success: "Item added to pantry",
-        error: "Error adding item to pantry",
+        loading: "Adding recipe...",
+        success: "Recipe added successfully",
+        error: "Error adding recipe",
       });
       const { success } = await response;
       setDisabled(false);
@@ -123,9 +120,9 @@ export default function AddPantryItem() {
         return;
       }
       form.reset({
-        name: "",
-        quantity: 1,
-        expirationDate: getDefaultExpirationDate(),
+        title: "",
+        pantryItems: [{ itemId: "", quantity: 1 }],
+        steps: [""],
         notes: "",
       });
       router.refresh();
@@ -138,50 +135,7 @@ export default function AddPantryItem() {
   };
 
   const onDrop = async (acceptedFiles: File[]) => {
-    setDisabled(true);
-    try {
-      const file = acceptedFiles[0];
-      const formData = new FormData();
-      formData.append("image", file);
-
-      if (useAi) {
-        const response = uploadImageWithAi(formData);
-        toast.promise(response, {
-          loading: "Uploading image and processing with AI...",
-          success:
-            "Image uploaded, please wait for AI to process and stream the data",
-          error: "Error uploading image and/or processing with AI",
-        });
-
-        const { object, imageUrl } = await response;
-
-        for await (const partialObject of readStreamableValue(object)) {
-          if (partialObject) {
-            setStreamedResponse(JSON.stringify(partialObject, null, 2));
-          }
-        }
-
-        setDisabled(false);
-        setImageUrl(imageUrl);
-      } else {
-        const response = uploadImage(formData);
-        toast.promise(response, {
-          loading: "Uploading image...",
-          success: "Image uploaded",
-          error: "Error uploading image",
-        });
-
-        const blobResult = await response;
-        setDisabled(false);
-        const imageUrl = blobResult.url;
-        setImageUrl(imageUrl);
-      }
-    } catch (error) {
-      console.error(error);
-      setDisabled(false);
-    } finally {
-      setDisabled(false);
-    }
+    console.log(acceptedFiles);
   };
 
   const {
@@ -209,77 +163,114 @@ export default function AddPantryItem() {
           onSubmit: form.handleSubmit(onSubmit),
         }}
       >
-        <DialogTitle>Add Item to Pantry</DialogTitle>
-        <DialogContent>
+        <DialogTitle>Add Recipe</DialogTitle>
+        {/* <DialogContent>
           <DialogContentText>
             Please complete all required fields
           </DialogContentText>
-          <ToggleButton
-            value="check"
-            selected={useAi}
-            onChange={() => setUseAi((prev) => !prev)}
-          >
-            {useAi ? <CheckmarkIcon /> : <ErrorIcon />}
-            <span className="pl-2">Use AI to fill in details</span>
-          </ToggleButton>
-          <div className="inline px-2">or</div>
-          <MassAddPantryItem handleClose={handleClose} />
-          <Typography className="pt-2" variant="body2">
-            Keep in mind that using AI will overwrite any existing data on the
-            form
-          </Typography>
           <TextField
-            {...form.register("name")}
-            label="What is the name of the item?"
+            {...form.register("title")}
+            label="Recipe Title"
             autoFocus
             margin="dense"
             fullWidth
             variant="standard"
-            error={!!form.formState.errors.name}
+            error={!!form.formState.errors.title}
             disabled={disabled}
             InputLabelProps={{ shrink: true }}
           />
-          {form.formState.errors.name && (
-            <p>{form.formState.errors.name.message}</p>
+          {form.formState.errors.title && (
+            <p>{form.formState.errors.title.message}</p>
           )}
-          <TextField
-            {...form.register("quantity", {
-              valueAsNumber: true,
-              validate: (value) =>
-                (Number.isInteger(value) && value > 0) ||
-                "Must be a positive integer",
-            })}
-            type="number"
-            label="How many do you have?"
-            margin="dense"
-            fullWidth
-            variant="standard"
-            error={!!form.formState.errors.quantity}
-            onChange={(e) =>
-              form.setValue("quantity", parseInt(e.target.value))
-            }
+          <Typography variant="h6" className="pt-2">
+            Pantry Items
+          </Typography>
+          {pantryFields.map((field, index) => (
+            <div key={field.id} className="flex items-center gap-2">
+              <FormControl fullWidth margin="dense" variant="standard">
+                <InputLabel>Pantry Item</InputLabel>
+                <Select
+                  {...form.register(`pantryItems.${index}.itemId`)}
+                  defaultValue={field.itemId}
+                  disabled={disabled}
+                >
+                  {pantryItems.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                {...form.register(`pantryItems.${index}.quantity`, {
+                  valueAsNumber: true,
+                  validate: (value) =>
+                    (Number.isInteger(value) &&
+                      value > pantryItems[index].quantity) ||
+                    "Must be a positive integer",
+                })}
+                type="number"
+                label="Quantity"
+                margin="dense"
+                variant="standard"
+                error={!!form.formState.errors.pantryItems?.[index]?.quantity}
+                onChange={(e) =>
+                  form.setValue(
+                    `pantryItems.${index}.quantity`,
+                    parseInt(e.target.value)
+                  )
+                }
+                disabled={disabled}
+                InputLabelProps={{ shrink: true }}
+              />
+              <Button
+                type="button"
+                onClick={() => removePantry(index)}
+                disabled={disabled}
+              >
+                <X />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            onClick={() => appendPantry({ itemId: "", quantity: 1 })}
             disabled={disabled}
-            InputLabelProps={{ shrink: true }}
-          />
-          {form.formState.errors.quantity && (
-            <p>{form.formState.errors.quantity.message}</p>
-          )}
-          <TextField
-            {...form.register("expirationDate")}
-            label="When does it expire?"
-            margin="dense"
-            fullWidth
-            variant="standard"
-            type="datetime-local"
-            InputLabelProps={{
-              shrink: true,
-            }}
-            error={!!form.formState.errors.expirationDate}
+          >
+            Add Pantry Item
+          </Button>
+          <Typography variant="h6" className="pt-2">
+            Steps
+          </Typography>
+          {stepFields.map((field, index) => (
+            <div key={field.id} className="flex items-center gap-2">
+              <TextField
+                {...form.register(`steps.${index}`)}
+                label={`Step ${index + 1}`}
+                margin="dense"
+                fullWidth
+                variant="standard"
+                type="text"
+                error={!!form.formState.errors.steps?.[index]}
+                disabled={disabled}
+                InputLabelProps={{ shrink: true }}
+              />
+              <Button
+                type="button"
+                onClick={() => removeStep(index)}
+                disabled={disabled}
+              >
+                <X />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            onClick={() => appendStep("")}
             disabled={disabled}
-          />
-          {form.formState.errors.expirationDate && (
-            <p>{form.formState.errors.expirationDate.message}</p>
-          )}
+          >
+            Add Step
+          </Button>
           <TextField
             {...form.register("notes")}
             label="Any notes you want to add?"
@@ -347,14 +338,15 @@ export default function AddPantryItem() {
               <p className="text-xs">Images only. Max 4 MB. One file only.</p>
             </div>
           )}
-        </DialogContent>
+        </DialogContent> */}
+        <DialogContent>WIP</DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="github" disabled={disabled}>
             Cancel
           </Button>
-          <Button type="submit" disabled={disabled}>
+          {/* <Button type="submit" disabled={disabled}>
             Submit
-          </Button>
+          </Button> */}
         </DialogActions>
       </Dialog>
     </React.Fragment>
