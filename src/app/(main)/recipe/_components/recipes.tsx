@@ -10,8 +10,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
 
-export const maxDuration = 58;
-
 export default function Recipes({
   recipes,
   pantryItems,

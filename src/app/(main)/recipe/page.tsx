@@ -5,6 +5,8 @@ import { recipe } from "@/app/(main)/recipe/types";
 import { db } from "@/utils/firebase";
 import { redirect } from "next/navigation";
 
+export const maxDuration = 58;
+
 export default async function RecipePage() {
   const { user } = await validateRequest();
 
