@@ -10,15 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
 
-export default function Recipes({
-  recipes,
-  pantryItems,
-}: {
-  recipes: recipe[];
-  pantryItems: pantryItem[];
-}) {
-  const [filteredRecipes, setFilteredRecipes] = useState(recipes);
-
+export default function Recipes() {
   return (
     <main className="h-[calc(100vh-200px)] flex flex-col items-center">
       <Typography variant="h3" className="p-2 pb-0">

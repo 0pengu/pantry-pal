@@ -31,6 +31,10 @@ export async function generateRecipe() {
     } as pantryItem;
   });
 
+  if (pantryItems.length === 0) {
+    throw new Error("You must have items in your pantry to generate a recipe");
+  }
+
   const pantryMessages: TextPart[] = pantryItems.map((item) => ({
     type: "text",
     text: `${item.quantity} ${item.name}`,
