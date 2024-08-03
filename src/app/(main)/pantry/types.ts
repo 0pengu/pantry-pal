@@ -6,5 +6,5 @@ export type pantryItem = {
   quantity: number;
   expirationDate: Date;
   notes?: string;
-  imageUrl: string;
+  imageUrl?: string;
 };

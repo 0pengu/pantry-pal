@@ -12,7 +12,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { put } from "@vercel/blob";
 import { pantryItem } from "@/app/(main)/pantry/types";
-import { CoreMessage, generateObject, streamObject } from "ai";
+import { CoreMessage, streamObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { createStreamableValue } from "ai/rsc";
 

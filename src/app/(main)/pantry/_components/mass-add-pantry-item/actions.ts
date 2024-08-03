@@ -67,8 +67,6 @@ export async function massUploadImagesWithAi(
         imageUrl: imageUrl,
       };
 
-      console.log(editedData);
-
       const docRef = await db
         .collection(`users/${user.id}/pantry`)
         .add(editedData);
